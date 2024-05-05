@@ -33,13 +33,7 @@ func scrapeSite(url string) (string, error) {
 		return "", err
 	}
 
-	// doc.Find("img").Remove()
-
 	doc.Find("img").Each(func(i int, el *goquery.Selection) {
-		slog.Error(fmt.Sprintf("Found img %+v", el))
-		fmt.Println()
-		fmt.Println()
-		fmt.Println()
 		el.Remove()
 	})
 	// We don't care about images, we only want the text on the site
@@ -59,6 +53,11 @@ func scrapeSite(url string) (string, error) {
 		el.Remove()
 	})
 
+	// There's unlikely to be anything we want in these
+	doc.Find("noscript").Each(func(i int, el *goquery.Selection) {
+		el.Remove()
+	})
+
 	// remove excess newlines etc
 	bdyText := standardizeSpaces(doc.Text())
 	slog.Info(bdyText)
@@ -70,8 +69,9 @@ func doSummarisation(token string, maxTokens int, server string, model string, s
 	lengthOfDataToSend := len(siteText)
 
 	// Just a rule of thumb
-	if len(siteText) > maxTokens {
-		lengthOfDataToSend = 2 * maxTokens
+	likelyMaximumLengthAccepted := 2 * maxTokens
+	if len(siteText) > 2*likelyMaximumLengthAccepted {
+		lengthOfDataToSend = 2 * likelyMaximumLengthAccepted
 	}
 
 	aiClient := openai.DefaultConfig(token)
@@ -90,7 +90,7 @@ func doSummarisation(token string, maxTokens int, server string, model string, s
 					Role: openai.ChatMessageRoleUser,
 					Content: fmt.Sprintf("Summarise the following text using the fewest possible words\n, %s",
 						// siteText),
-						siteText[:lengthOfDataToSend]),
+						siteText[:lengthOfDataToSend-1]),
 				},
 			},
 			Stream:           true,
@@ -136,8 +136,8 @@ func doSummarisation(token string, maxTokens int, server string, model string, s
 func main() {
 
 	// Replace this with a function to discover
-	// site := "https://www.bbc.co.uk/news/uk-england-london-68552817"
-	site := "https://github.com/PuerkitoBio/goquery"
+	site := "https://www.bbc.co.uk/news/uk-england-london-68552817"
+	// site := "https://github.com/PuerkitoBio/goquery"
 	// site := "https://example.com"
 
 	siteText, err := scrapeSite(site)
@@ -166,5 +166,7 @@ func main() {
 	reduction := float64(len(siteText) - len(summary))
 	lengthRatio := (reduction) / float64(len(siteText))
 
+	// Replace this with code to send the summary as a comment
 	fmt.Printf("The original site contains %d words, the summary contains %d words. Saved %f %%\n", len(siteText), len(summary), lengthRatio*100)
+
 }
