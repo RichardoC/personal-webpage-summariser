@@ -89,8 +89,7 @@ func doSummarisation(token string, maxTokens int, server string, model string, s
 				{
 					Role: openai.ChatMessageRoleUser,
 					Content: fmt.Sprintf("Summarise the following text using the fewest possible words\n, %s",
-						// siteText),
-						siteText[:lengthOfDataToSend-1]),
+						siteText[:lengthOfDataToSend]),
 				},
 			},
 			Stream:           true,
@@ -130,6 +129,7 @@ func doSummarisation(token string, maxTokens int, server string, model string, s
 		}
 
 	}
+	// Never get here
 
 }
 
